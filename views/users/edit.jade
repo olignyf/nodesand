@@ -1,0 +1,17 @@
+extends ../layout
+
+block content
+    h1.
+        Blob ID #{user._id}
+    form(action='/users/#{user._id}/edit',method='post',name='updateuser',enctype='application/x-www-form-urlencoded')
+        p Name: 
+            input#inputName(type='text', value='#{user.name}', name='name')
+        p Email: 
+            input#inputBadge(type='text', value='#{user.username}', name='username')
+        p 
+            input(type='hidden',value='PUT',name='_method')
+        p 
+            button#btnSubmit(type='submit').
+                Update
+            &nbsp;
+            a(href="/users/")= "cancel"

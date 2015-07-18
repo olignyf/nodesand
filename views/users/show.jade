@@ -1,0 +1,8 @@
+extends ../layout
+
+block content
+    h1.
+        User ID: #{user._id}
+    p Name: #{user.name}
+    p Email: #{user.username}
+    a(href="/users/#{user._id}/edit")= "edit"

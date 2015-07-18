@@ -1,0 +1,15 @@
+extends ../layout
+
+block content
+    h1.
+        #{title}
+
+    form#formAddBlob(name="addblob",method="post",action="/users")
+        p Name: 
+            input#inputName(type="text", placeholder="ex. John Smith", name="name")
+        p Email: 
+            input#inputEmail(type="text", placeholder="john@gmail.com", name="username")
+        p Password: 
+            input#inputPassword(type="password", placeholder="", name="password")
+        p
+            button#btnSubmit(type="submit") submit

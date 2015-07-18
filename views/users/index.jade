@@ -1,0 +1,15 @@
+extends ../layout
+
+block content
+    h1.
+        User List
+    ul
+        each user, i in users
+            li
+                a(href="mailto:#{user.email}")= user.username
+                &nbsp;
+                a(href="/users/#{user._id}")= "view"
+                &nbsp;
+                a(href="/users/#{user._id}/edit")= "edit"
+
+    a(href="new")= "create new"
