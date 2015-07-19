@@ -1,6 +1,6 @@
 var express = require('express');
 var mongoose = require('mongoose');
-//var user = require('../models/user');
+var s3 = require('../helpers/s3');
 var router = express.Router();
 
 router.route('/').get(function(req, res, next) 
@@ -233,10 +233,6 @@ router.post('/:id/edit', function(req, res)
 {
     // Get our REST or form values. These rely on the "name" attributes
     var name = req.body.name;
-    var badge = req.body.badge;
-    var dob = req.body.dob;
-    var company = req.body.company;
-    var isloved = req.body.isloved;
 
    //find the document by ID
    mongoose.model('User').findById(req.id, function (err, blob) 
@@ -244,9 +240,6 @@ router.post('/:id/edit', function(req, res)
             //update it
             blob.update({
                 name : name,
-                badge : badge,
-                dob : dob,
-                isloved : isloved
             }, function (err, blobID) {
               if (err) {
                   res.send("There was a problem updating the information to the database: " + err);
@@ -299,5 +292,25 @@ router.delete('/:id/edit', function (req, res){
     });
 });
 
+
+//PUT to update a blob by ID
+router.post('/:id/organization/banner/upload', function(req, res) 
+{
+    s3.upload( req, "banner" + req.id, function ( err, uploadResult ) 
+    {
+       console.log( 'after uploading banner' );
+       console.log( uploadResult.data );
+       console.log( 'url' );
+       console.log( uploadResult.url );
+       console.log( 'uploadResult:' );
+       console.log( uploadResult );
+
+       //function ( ) {
+          res.send( {
+             url: uploadResult.url
+          });
+       //};
+    });
+});
 
 module.exports = router;
