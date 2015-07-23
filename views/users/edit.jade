@@ -4,10 +4,19 @@ block content
     h1.
         Blob ID #{user._id}
     form(action='/users/#{user._id}/edit',method='post',name='updateuser',enctype='application/x-www-form-urlencoded')
+        input#inputId(type='hidden', value='#{user._id}', name='name')
         p Name: 
             input#inputName(type='text', value='#{user.name}', name='name')
         p Email: 
-            input#inputBadge(type='text', value='#{user.username}', name='username')
+            input#inputUsername(type='text', value='#{user.username}', name='username')
+        p Banner: 
+            input#inputBanner(type='text', value='#{user.Banner}', name='Banner')
+        p BannerFullRes: 
+            input#inputBannerFullRes(type='text', value='#{user.BannerFullRes}', name='BannerFullRes')
+        p Logo: 
+            input#inputLogo(type='text', value='#{user.Logo}', name='Logo')
+        p LogoFullRes: 
+            input#inputLogoFullRes(type='text', value='#{user.LogoFullRes}', name='LogoFullRes')
         p 
             input(type='hidden',value='PUT',name='_method')
         p 

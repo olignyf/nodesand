@@ -2,12 +2,16 @@ doctype html
 html(ng-app='nodesand')
   head
     title= title
-    link(rel="stylesheet", href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css")
+    //link(rel="stylesheet", href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css")
+    link(rel="stylesheet", href="/stylesheets/bootstrap.min.css")
     link(rel='stylesheet', href='/stylesheets/style.css')
+    link(rel='stylesheet', type='text/css', href='/stylesheets/main.css')
     link(rel='stylesheet', href='/stylesheets/popup.css')
     script(src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js')
+    script window.jQuery || document.write('<script src="/javascripts/jquery-1.11.3.min.js">\x3C/script>')
     script(src='/javascripts/angular/angular.js')
-    script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js")
+    //script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js")
+    script(src="/javascripts/bootstrap-3.3.5.min.js")
     script(src='/javascripts/ui-bootstrap-tpls-0.13.0.js')
 
     script(src='/javascripts/ng-file-upload.js')
@@ -15,3 +19,4 @@ html(ng-app='nodesand')
     script(src='/javascripts/angular-user-edit.js')
   body
     block content
+  script(src='/javascripts/cropper.js')

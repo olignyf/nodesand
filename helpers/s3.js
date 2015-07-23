@@ -8,13 +8,36 @@ var multiparty = require( 'multiparty' );
 var s3Clients = {
 };
 
+var getTimeStamp = function ( ) {
+    return Math.floor( Date.now( ) / 1000 );
+};
+
 var onEnd = function ( ) {
     throw new Error( "no uploaded file" );
 };
 
+var putFile = function ( req, fileName, f_callback ) 
+{
+    headers = {
+     'x-amz-acl': 'public-read',
+     'Cache-Control': 'public,max-age=290304000'
+    };
+    
+    if (s3Clients[ config.s3.bucket ] == null)
+    {	s3Clients[ config.s3.bucket ] = knox.createClient( config.s3 );
+    }
+        
+    s3Clients[ config.s3.bucket ].putFile(req, fileName, headers, function(err, s3Response)
+    {
+       f_callback( err, {
+           url: s3Clients[ config.s3.bucket ].url( "/" + fileName )
+       } );
+    });
+
+};
+
 var upload = function ( req, fileName, f_callback ) 
 {
-
     var form = new multiparty.Form( ),
         batch = new Batch( ),
         size = 0,
@@ -53,6 +76,7 @@ var upload = function ( req, fileName, f_callback )
 
         headers[ 'Content-Length' ] = size;
         headers[ 'Content-Type' ] = type;
+        console.log("going to public read putStream");
 
         if ( true ) {
            fileName = getTimeStamp( ) + '-' + fileName;
@@ -63,8 +87,7 @@ var upload = function ( req, fileName, f_callback )
         }
         s3Clients[ config.s3.bucket ].putStream( part, fileName, headers, function ( err, s3Response ) 
         {
-            if ( err ) throw err;
-            f_callback( null, {
+            f_callback( err, {
                 url: s3Clients[ config.s3.bucket ].url( "/" + fileName ),
                 data: data
             } );
@@ -75,8 +98,4 @@ var upload = function ( req, fileName, f_callback )
     form.parse( req );
 };
 
-var getTimeStamp = function ( ) {
-    return Math.floor( Date.now( ) / 1000 );
-};
-
-module.exports = { upload: upload };
+module.exports = { upload: upload, putFile: putFile };

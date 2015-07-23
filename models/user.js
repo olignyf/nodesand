@@ -9,6 +9,8 @@ var userSchema = new mongoose.Schema({
   admin: Boolean,
   Logo: String,
   LogoFullRes: String,
+  Banner: String,
+  BannerFullRes: String,
   meta: {
     age: Number,
     website: String

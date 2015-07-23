@@ -5,4 +5,20 @@ block content
         User ID: #{user._id}
     p Name: #{user.name}
     p Email: #{user.username}
+    p LogoFullRes: #{user.LogoFullRes}
+    p Logo: #{user.Logo}
+    div.pull-left
+        div.pictureUploader.pictureUploaderPreviewLogo
+            div.pictureUploaderPreview
+                img.logo.preview(alt="Logo Image", src="#{user.Logo}")
+    br.clearBoth
+    p BannerFullRes: #{user.BannerFullRes}
+    p Banner: #{user.Banner}
+    div.pull-left
+        div.pictureUploader.pictureUploaderPreviewBanner
+            div.pictureUploaderPreview
+                img.banner.preview(alt="Banner Image", src="#{user.Banner}")
+    br.clearBoth
     a(href="/users/#{user._id}/edit")= "edit"
+
+

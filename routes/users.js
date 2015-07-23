@@ -1,7 +1,21 @@
 var express = require('express');
 var mongoose = require('mongoose');
+var fs = require('fs');
+var gm = require('gm');
+var imageMagick = gm.subClass({ imageMagick: true });
 var s3 = require('../helpers/s3');
+var http = require('http');
+var https = require('https');
+//var multiparty = require('multiparty');
 var router = express.Router();
+
+var getRandomInt = function (min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+};
+
+var getTimeStamp = function ( ) {
+    return Math.floor( Date.now( ) / 1000 );
+};
 
 router.route('/').get(function(req, res, next) 
 {
@@ -189,76 +203,206 @@ router.get('/:id/edit', function(req, res)
     });
 });
 
-//PUT to update a blob by ID
-router.put('/:id/edit', function(req, res) 
+var postEditUser = function(req, res)
 {
     // Get our REST or form values. These rely on the "name" attributes
     var name = req.body.name;
-    var badge = req.body.badge;
-    var dob = req.body.dob;
-    var company = req.body.company;
-    var isloved = req.body.isloved;
+    var Banner = req.body.Banner;
+    var BannerFullRes = req.body.BannerFullRes;
+    var Logo = req.body.Logo;
+    var LogoFullRes = req.body.LogoFullRes;
+    console.log("Saving BannerFullRes:"+BannerFullRes);
 
    //find the document by ID
    mongoose.model('User').findById(req.id, function (err, blob) 
    {
-            //update it
-            blob.update({
-                name : name,
-                badge : badge,
-                dob : dob,
-                isloved : isloved
-            }, function (err, blobID) {
-              if (err) {
-                  res.send("There was a problem updating the information to the database: " + err);
-              } 
-              else {
-                      //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
-                      res.format({
-                          html: function(){
-                               res.redirect("/users/" + blob._id);
-                         },
-                         //JSON responds showing the updated values
-                        json: function(){
-                               res.json(blob);
-                         }
-                      });
-               }
-            })
-        });
-});
+      //update it
+      blob.update({
+         name : name,
+         Banner : Banner,
+         BannerFullRes : BannerFullRes,
+         Logo : Logo,
+         LogoFullRes : LogoFullRes
+      }, function (err, blobID) {
+         if (err) {
+             res.send("There was a problem updating the information to the database: " + err);
+         } 
+         else {
+             //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
+             res.format({
+                 html: function(){
+                     res.redirect("/users/" + blob._id);
+                 },
+                 //JSON responds showing the updated values
+                 json: function(){
+                     res.json(blob);
+                 }
+             });
+         }
+      }) 
+   });
+};
 
 //PUT to update a blob by ID
 router.post('/:id/edit', function(req, res) 
 {
-    // Get our REST or form values. These rely on the "name" attributes
-    var name = req.body.name;
-
-   //find the document by ID
-   mongoose.model('User').findById(req.id, function (err, blob) 
-   {
-            //update it
-            blob.update({
-                name : name,
-            }, function (err, blobID) {
-              if (err) {
-                  res.send("There was a problem updating the information to the database: " + err);
-              } 
-              else {
-                      //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
-                      res.format({
-                          html: function(){
-                               res.redirect("/users/" + blob._id);
-                         },
-                         //JSON responds showing the updated values
-                        json: function(){
-                               res.json(blob);
-                         }
-                      });
-               }
-            })
-        });
+	postEditUser(req, res);
 });
+
+//PUT to update a blob by ID
+router.put('/:id/edit', function(req, res) 
+{
+	postEditUser(req, res);
+});
+
+// save on s3 but do not save in organisation, waiting to crop
+router.post( '/:id/organization/banner/crop', function ( req, res ) 
+{
+      // console.log('req:'); console.log(req);
+      console.log('req.body:'); console.log(req.body);
+      var crop = req.body.crop;
+      var rotate = req.body.rotate;
+      var sourceUrl = req.body.sourceUrl;
+      console.log('sourceUrl:'+sourceUrl);
+      
+      var tempFile = 'tmpFile-'+req.body.organization.Id + '-' + getRandomInt(1,5000); ///FRANK, do we have a temp folder that gets cleaned up periodically?
+      var tempOutputFile = 'tmpOutFile-'+req.body.organization.Id + '-' + getRandomInt(1,5000); ///FRANK, do we have a temp folder that gets cleaned up periodically?
+      var cb = function()
+      {
+          //var Image = imageMagick("c:\\temp\\source.jpg")
+          var Image = imageMagick(tempFile)
+          
+          // Rotate before cropping
+          if (crop !== undefined && crop.rotate !== undefined) {
+              console.log('Going to rotate, rotate:'+crop.rotate);
+               Image = Image.rotate('#000000', parseInt(crop.rotate, 10)); // The color is the background in case image doesn't fill all canvas after rotate.
+          }
+          
+          if (crop !== undefined) {
+              if (crop.width === undefined) {
+                  res.send( {
+                      err: "crop.width is undefined"
+                  } );
+                  return;
+              }
+              if (crop.height === undefined) {
+                  res.send( {
+                      err: "crop.height is undefined"
+                  } );
+                  return;
+              }
+              if (crop.x === undefined) {
+                  res.send( {
+                      err: "crop.x is undefined"
+                  } );
+                  return;
+              }
+              if (crop.y === undefined) {
+                  res.send( {
+                      err: "crop.y is undefined"
+                  } );
+                  return;
+              }
+               
+              console.log('Going to crop, width:'+crop.width+' height:'+crop.height+' x:'+crop.x+' y:'+crop.y);
+              Image = Image.crop(crop.width, crop.height, crop.x, crop.y);
+          }
+          
+          if (crop.maxWidth !== undefined || crop.maxHeight !== undefined) {
+          
+              var newWidth = Image.width;
+              var newHeight = Image.height;
+              if (crop.maxWidth !== undefined && newWidth > crop.maxWidth) {
+                  newWidth = crop.maxWidth;
+                  newHeight = crop.maxWidth * Image.height / Image.width;
+              }
+              if (crop.maxHeight !== undefined && newHeight > crop.maxHeight) {
+                  newHeight = crop.maxHeight;
+                  newWidth = crop.maxHeight * Image.width / Image.height;
+              }
+              
+              if (newWidth != Image.width || newHeight != Image.height) {
+                  Image = Image.resize(newWidth, newHeight);
+              }
+          }          
+          
+          //imageMagick(request('http://incoming.oligny.com/temp/20150604_184226.jpg'), 'my-image.jpg')
+          console.log('write out');
+          Image.write(tempOutputFile, function(err)
+          {
+              /// Upload to S3 this temporary tempOutputFile file
+              console.log("going to upload "+tempOutputFile+" to S3");
+              
+				  //find the document by ID
+				  mongoose.model('User').findById(req.id, function (err, blob) 
+				  {
+				     if (err) throw err;
+				     
+	         	  s3.putFile(tempOutputFile, 'banner-cropped-' + req.id + '-' + getRandomInt(1,5000), function(err, s3res) 
+	         	  {
+                    if (err) throw err;
+                    
+					     // Always either do something with `res` or at least call `res.resume()`.	
+					     console.log("Success uploading cropped banner to S3");
+					     console.log(s3res);				     
+					     
+		              console.log('Going to updateOrganizationProfile');
+		              
+		              //var orgupdate = {
+		              //    Id: req.body.organization.Id,
+		              //    Banner: 'TBD-new S3 URL'
+		              //};		              
+		              //orgRepo.updateOrganizationProfile( orgupdate, req.session.token, function ( ) {
+		              //    res.send( {
+		              //        url: orgupdate.Banner
+		              //    } );
+		              //} );
+		              console.log("going to update user with Banner:"+s3res.url);
+	              
+					     //update it
+					     blob.Banner = s3res.url;
+					     
+					     blob.update({
+					        Banner : s3res.url
+					     }, function (err, blobID) {
+					         if (err) {
+					             res.send("There was a problem updating the information to the database: " + err);
+					         } 
+					         else {
+					             //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
+					             res.format({
+					                 html: function(){
+					                     res.redirect("/users/" + blob._id);
+					                 },
+					                 //JSON responds showing the updated values
+					                 json: function() {
+					                     res.json(blob);
+					                 }
+					             });
+					         }
+					      });
+					   });
+				   });
+           } );
+      };
+      
+      console.log("going to createWriteStream");
+      var file = fs.createWriteStream(tempFile);
+      console.log("going to open sourceUrl, file:");
+      console.log(file);
+      var protocol = sourceUrl.indexOf('https') === 0 ? https : http;
+      var request = protocol.get(sourceUrl, function(response) {
+        console.log("going to pipe");
+        response.pipe(file);
+        console.log("piping");
+        file.on('finish', function()
+        {
+          console.log("finished");
+          file.close(cb);
+        } );
+      } );
+    } );
+
 
 //DELETE a Blob by ID
 router.delete('/:id/edit', function (req, res){
@@ -305,11 +449,33 @@ router.post('/:id/organization/banner/upload', function(req, res)
        console.log( 'uploadResult:' );
        console.log( uploadResult );
 
-       //function ( ) {
-          res.send( {
-             url: uploadResult.url
-          });
-       //};
+       if (err == null && uploadResult != null && uploadResult.url != null)
+       {
+			  mongoose.model('User').findById(req.id, function (err, blob) 
+			  {
+			     //update it
+				  blob.BannerFullRes = blob.url = uploadResult.url;
+			     blob.update({
+			        BannerFullRes: uploadResult.url
+			     }, function (err, blobID) {
+			        if (err) {
+				        res.send("There was a problem updating the information to the database: " + err);
+				     } 
+				     else {
+				        //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
+				        res.format({
+				            html: function(){
+				               res.redirect("/users/" + blob._id);
+				            },
+				            //JSON responds showing the updated values
+				            json: function() {
+				                res.json(blob);
+				            }
+				         });
+				      }
+				  });
+			 });
+       }
     });
 });
 
