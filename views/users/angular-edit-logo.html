@@ -39,19 +39,21 @@
                 <div class="form-group">
                     <label translate="Banner" class="col-sm-2 control-label"></label>
                     <div class="col-sm-10">
-                        <div class="pull-left">
-                            <div class="pictureUploader pictureUploaderPreviewBanner">
-                                <div class="pictureUploaderPreview">
-                                    <img alt="Banner Image" ng-src="{{ vm.organization.Banner }}" />
+                        <div class="pictureUploader pictureUploaderPreviewBanner row">
+                            <div class="pictureUploaderPreview col-sm-2">
+                                <img alt="Banner Image" ng-src="{{ vm.organization.Banner }}" />
+                            </div>
+                            <div class="col-sm-8">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                       <button class="btn btn-default" ng-click="onBannerChange()" translate="UploadBanner">Change Banner</button>
+                                       <!-- do not delete the following, it is still used from javascript --><button class="btn btn-default hidden jsTriggerUploadBanner" ngf-select ngf-change="onBannerFileSelect($files)">Upload Banner</button>
+                                    </div>                        
+                                    <div class="col-sm-9">
+                                       <customloading show="vm.loadingBanner"></customloading>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="pull-left m-t-lg m-l">
-                            <button class="btn btn-default" ng-click="onBannerChange()" translate="UploadBanner">Change Banner</button>
-                            <!-- do not delete the following, it is still used from javascript --><button class="btn btn-default hidden jsTriggerUploadBanner" ngf-select ngf-change="onBannerFileSelect($files)">Upload Banner</button>
-                        </div>
-                        <div class="pull-left m-t-md m-l">
-                            <customloading show="vm.loadingBanner"></customloading>
                         </div>
                     </div>
                 </div>

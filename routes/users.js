@@ -17,6 +17,17 @@ var getTimeStamp = function ( ) {
     return Math.floor( Date.now( ) / 1000 );
 };
 
+var isSet = function(value)
+{
+	if (value === undefined || value === null) return false;
+	return true;
+}
+var isNull = function(value)
+{
+	if (value === undefined || value === null) return true;
+	return false;
+}
+
 router.route('/').get(function(req, res, next) 
 {
 	//retrieve all blobs from Monogo
@@ -146,7 +157,7 @@ router.route('/:id').get(function(req, res)
       {
         console.log('GET Retrieving ID: ' + blob._id);
         var blobdob;
-        if (blob.dob != null)
+        if (isSet(blob.dob))
         {	blobdob = blob.dob.toISOString();
         		blobdob = blobdob.substring(0, blobdob.indexOf('T'))
         }
@@ -181,7 +192,7 @@ router.get('/:id/edit', function(req, res)
             console.log('GET Retrieving ID: ' + blob._id);
             //format the date properly for the value to show correctly in our edit form
           var blobdob;
-          if (blob.dob != null)
+          if (isSet(blob.dob))
           {	blobdob = blob.dob.toISOString();
            		blobdob = blobdob.substring(0, blobdob.indexOf('T'))
           }
@@ -273,31 +284,31 @@ var postImageCrop = function ( whichItem, req, res )
           var Image = imageMagick(tempFile)
           
           // Rotate before cropping
-          if (crop !== undefined && crop.rotate !== undefined) {
+          if (isSet(crop) && isSet(crop.rotate)) {
               console.log('Going to rotate, rotate:'+crop.rotate);
-               Image = Image.rotate('#000000', parseInt(crop.rotate, 10)); // The color is the background in case image doesn't fill all canvas after rotate.
+              Image = Image.rotate('#000000', parseInt(crop.rotate, 10)); // The color is the background in case image doesn't fill all canvas after rotate.
           }
           
-          if (crop !== undefined) {
-              if (crop.width === undefined) {
+          if (isSet(crop)) {
+              if (isNull(crop.width)) {
                   res.send( {
                       err: "crop.width is undefined"
                   } );
                   return;
               }
-              if (crop.height === undefined) {
+              if (isNull(crop.height)) {
                   res.send( {
                       err: "crop.height is undefined"
                   } );
                   return;
               }
-              if (crop.x === undefined) {
+              if (isNull(crop.x)) {
                   res.send( {
                       err: "crop.x is undefined"
                   } );
                   return;
               }
-              if (crop.y === undefined) {
+              if (isNull(crop.y)) {
                   res.send( {
                       err: "crop.y is undefined"
                   } );
@@ -378,18 +389,18 @@ var postImageCrop = function ( whichItem, req, res )
 	           } );
 	   	 };
           
-          if (crop.maxWidth !== undefined || crop.maxHeight !== undefined) {
+          if (isSet(crop.maxWidth) || isSet(crop.maxHeight)) {
           
               Image.size(function (err, size) 
               {
                  if (err) throw err;
 	              var newWidth = size.width;
 	              var newHeight = size.height;
-	              if (crop.maxWidth !== undefined && newWidth > crop.maxWidth) {
+	              if (isSet(crop.maxWidth) && newWidth > crop.maxWidth) {
 	                  newWidth = crop.maxWidth;
 	                  newHeight = crop.maxWidth * size.height / size.width;
 	              }
-	              if (crop.maxHeight !== undefined && newHeight > crop.maxHeight) {
+	              if (isSet(crop.maxHeight) && newHeight > crop.maxHeight) {
 	                  newHeight = crop.maxHeight;
 	                  newWidth = crop.maxHeight * size.width / size.height;
 	              }
@@ -487,7 +498,7 @@ router.post('/:id/organization/logo/upload', function(req, res)
        console.log( 'uploadResult:' );
        console.log( uploadResult );
 
-       if (err == null && uploadResult != null && uploadResult.url != null)
+       if (isNull(err) && isSet(uploadResult) && isSet(uploadResult.url))
        {
 			  mongoose.model('User').findById(req.id, function (err, blob) 
 			  {
@@ -529,7 +540,7 @@ router.post('/:id/organization/banner/upload', function(req, res)
        console.log( 'uploadResult:' );
        console.log( uploadResult );
 
-       if (err == null && uploadResult != null && uploadResult.url != null)
+       if (isNull(err) && isSet(uploadResult) && isSet(uploadResult.url))
        {
 			  mongoose.model('User').findById(req.id, function (err, blob) 
 			  {
