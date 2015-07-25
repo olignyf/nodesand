@@ -205,11 +205,16 @@ app.controller('organizationProfileCtrl', function ($scope, $http, Upload)
           params.maxWidth = 50;
           params.maxHeight = 50;
        }
-              
+       else if ($scope.modalOpenFor === 'banner') {
+          sourceUrl = vm.organization.BannerFullRes;
+          params.maxWidth = null;
+          params.maxHeight = 150;
+       }
+       
        $http( {
           method: 'POST',
           data: {organization: vm.organization, crop:params, sourceUrl: sourceUrl},
-          url: 'organization/banner/crop',
+          url: 'organization/'+$scope.modalOpenFor+'/crop',
        } ).success( function ( data, status, headers, cfg ) {
          //  deferred.resolve( status );
           if (console) 
@@ -218,7 +223,13 @@ app.controller('organizationProfileCtrl', function ($scope, $http, Upload)
           
           // close modal
           $('#cropper-modal').modal('hide');
-          vm.organization.Banner = data.Banner;
+         
+          if ($scope.modalOpenFor === 'banner') {
+             vm.organization.Banner = data.Banner;
+          }
+          if ($scope.modalOpenFor === 'logo') {
+             vm.organization.Logo = data.Logo;
+          }
           
        } ).error( function ( err, status ) {
           //   deferred.reject( status );

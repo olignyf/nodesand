@@ -256,18 +256,18 @@ router.put('/:id/edit', function(req, res)
 });
 
 // save on s3 but do not save in organisation, waiting to crop
-router.post( '/:id/organization/banner/crop', function ( req, res ) 
+var postImageCrop = function ( whichItem, req, res ) 
 {
       // console.log('req:'); console.log(req);
       console.log('req.body:'); console.log(req.body);
       var crop = req.body.crop;
-      var rotate = req.body.rotate;
       var sourceUrl = req.body.sourceUrl;
       console.log('sourceUrl:'+sourceUrl);
+      console.log('crop:'); console.log(crop);
       
       var tempFile = 'tmpFile-'+req.body.organization.Id + '-' + getRandomInt(1,5000); ///FRANK, do we have a temp folder that gets cleaned up periodically?
       var tempOutputFile = 'tmpOutFile-'+req.body.organization.Id + '-' + getRandomInt(1,5000); ///FRANK, do we have a temp folder that gets cleaned up periodically?
-      var cb = function()
+      var f_croppingCallback = function(whichItem, req, res)
       {
           //var Image = imageMagick("c:\\temp\\source.jpg")
           var Image = imageMagick(tempFile)
@@ -308,101 +308,139 @@ router.post( '/:id/organization/banner/crop', function ( req, res )
               Image = Image.crop(crop.width, crop.height, crop.x, crop.y);
           }
           
+          var f_imageWriteRoutine = function(whichItem, req, res)
+          {
+	          //imageMagick(request('http://incoming.oligny.com/temp/20150604_184226.jpg'), 'my-image.jpg')
+	          console.log('write out');
+	          Image.write(tempOutputFile, function(err)
+	          {
+		           if (err) throw err;
+	              /// Upload to S3 this temporary tempOutputFile file
+	              console.log("going to upload "+tempOutputFile+" to S3");
+	              
+					  //find the document by ID
+					  mongoose.model('User').findById(req.id, function (err, blob) 
+					  {
+					     if (err) throw err;
+					     
+		         	  s3.putFile(tempOutputFile, 'banner-cropped-' + req.id + '-' + getRandomInt(1,5000), function(err, s3res) 
+		         	  {
+	                    if (err) throw err;
+	                    
+						     // Always either do something with `res` or at least call `res.resume()`.	
+						     console.log("Success uploading cropped banner to S3");
+						     console.log(s3res);				     
+						     
+			              console.log('Going to updateOrganizationProfile');
+			              
+			              //var orgupdate = {
+			              //    Id: req.body.organization.Id,
+			              //    Banner: 'TBD-new S3 URL'
+			              //};		              
+			              //orgRepo.updateOrganizationProfile( orgupdate, req.session.token, function ( ) {
+			              //    res.send( {
+			              //        url: orgupdate.Banner
+			              //    } );
+			              //} );
+			              console.log("going to update user with "+whichItem+":"+s3res.url);
+		              
+						     //update it
+						     var update = {};
+						     if (whichItem == "banner") {
+						        blob.Banner = s3res.url;
+						        update.Banner = s3res.url;
+						     }
+						     else if (whichItem == "logo") {
+						        blob.Logo = s3res.url;
+						        update.Logo = s3res.url;
+						     }
+						     
+						     blob.update(update , function (err, blobID)
+						     {
+						         if (err) {
+						             res.send("There was a problem updating the information to the database: " + err);
+						         } 
+						         else {
+						             //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
+						             res.format({
+						                 html: function(){
+						                     res.redirect("/users/" + blob._id);
+						                 },
+						                 //JSON responds showing the updated values
+						                 json: function() {
+						                     res.json(blob);
+						                 }
+						             });
+						         }
+						      });
+						   });
+					   });
+	           } );
+	   	 };
+          
           if (crop.maxWidth !== undefined || crop.maxHeight !== undefined) {
           
-              var newWidth = Image.width;
-              var newHeight = Image.height;
-              if (crop.maxWidth !== undefined && newWidth > crop.maxWidth) {
-                  newWidth = crop.maxWidth;
-                  newHeight = crop.maxWidth * Image.height / Image.width;
-              }
-              if (crop.maxHeight !== undefined && newHeight > crop.maxHeight) {
-                  newHeight = crop.maxHeight;
-                  newWidth = crop.maxHeight * Image.width / Image.height;
-              }
-              
-              if (newWidth != Image.width || newHeight != Image.height) {
-                  Image = Image.resize(newWidth, newHeight);
-              }
-          }          
-          
-          //imageMagick(request('http://incoming.oligny.com/temp/20150604_184226.jpg'), 'my-image.jpg')
-          console.log('write out');
-          Image.write(tempOutputFile, function(err)
-          {
-              /// Upload to S3 this temporary tempOutputFile file
-              console.log("going to upload "+tempOutputFile+" to S3");
-              
-				  //find the document by ID
-				  mongoose.model('User').findById(req.id, function (err, blob) 
-				  {
-				     if (err) throw err;
-				     
-	         	  s3.putFile(tempOutputFile, 'banner-cropped-' + req.id + '-' + getRandomInt(1,5000), function(err, s3res) 
-	         	  {
-                    if (err) throw err;
-                    
-					     // Always either do something with `res` or at least call `res.resume()`.	
-					     console.log("Success uploading cropped banner to S3");
-					     console.log(s3res);				     
-					     
-		              console.log('Going to updateOrganizationProfile');
-		              
-		              //var orgupdate = {
-		              //    Id: req.body.organization.Id,
-		              //    Banner: 'TBD-new S3 URL'
-		              //};		              
-		              //orgRepo.updateOrganizationProfile( orgupdate, req.session.token, function ( ) {
-		              //    res.send( {
-		              //        url: orgupdate.Banner
-		              //    } );
-		              //} );
-		              console.log("going to update user with Banner:"+s3res.url);
+              Image.size(function (err, size) 
+              {
+                 if (err) throw err;
+	              var newWidth = size.width;
+	              var newHeight = size.height;
+	              if (crop.maxWidth !== undefined && newWidth > crop.maxWidth) {
+	                  newWidth = crop.maxWidth;
+	                  newHeight = crop.maxWidth * size.height / size.width;
+	              }
+	              if (crop.maxHeight !== undefined && newHeight > crop.maxHeight) {
+	                  newHeight = crop.maxHeight;
+	                  newWidth = crop.maxHeight * size.width / size.height;
+	              }
 	              
-					     //update it
-					     blob.Banner = s3res.url;
-					     
-					     blob.update({
-					        Banner : s3res.url
-					     }, function (err, blobID) {
-					         if (err) {
-					             res.send("There was a problem updating the information to the database: " + err);
-					         } 
-					         else {
-					             //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
-					             res.format({
-					                 html: function(){
-					                     res.redirect("/users/" + blob._id);
-					                 },
-					                 //JSON responds showing the updated values
-					                 json: function() {
-					                     res.json(blob);
-					                 }
-					             });
-					         }
-					      });
-					   });
-				   });
-           } );
+	              console.log("last verif before resize");
+	              if (newWidth != size.width || newHeight != size.height) {
+	              newHeight = Number(Math.round(newHeight));
+	              newWidth = Number(Math.round(newWidth));
+	                  console.log("going to resize to "+newWidth+"x"+newHeight);
+	                  Image = Image.resize(newWidth, newHeight);
+	              }
+	              
+                 f_imageWriteRoutine(whichItem, req, res);
+              });
+          }
+          else
+          {
+              f_imageWriteRoutine(whichItem, req, res);
+          }
       };
       
       console.log("going to createWriteStream");
       var file = fs.createWriteStream(tempFile);
-      console.log("going to open sourceUrl, file:");
+      console.log("going to download sourceUrl, file:");
       console.log(file);
       var protocol = sourceUrl.indexOf('https') === 0 ? https : http;
       var request = protocol.get(sourceUrl, function(response) {
-        console.log("going to pipe");
+        console.log("Downloading original image");
         response.pipe(file);
-        console.log("piping");
+        console.log("piping...");
         file.on('finish', function()
         {
-          console.log("finished");
-          file.close(cb);
-        } );
-      } );
-    } );
+           console.log("finished");
+           file.close(function() {
+              f_croppingCallback(whichItem, req, res); // pass parameters here again to enclose them
+           });
+        });
+    });
+};
 
+// save on s3 but do not save in organisation, waiting to crop
+router.post( '/:id/organization/logo/crop', function ( req, res ) 
+{
+   postImageCrop( "logo", req, res );
+});
+
+// save on s3 but do not save in organisation, waiting to crop
+router.post( '/:id/organization/banner/crop', function ( req, res ) 
+{
+   postImageCrop( "banner", req, res );
+});
 
 //DELETE a Blob by ID
 router.delete('/:id/edit', function (req, res){
@@ -436,6 +474,48 @@ router.delete('/:id/edit', function (req, res){
     });
 });
 
+
+//PUT to update a blob by ID
+router.post('/:id/organization/logo/upload', function(req, res) 
+{
+    s3.upload( req, "logo" + req.id, function ( err, uploadResult ) 
+    {
+       console.log( 'after uploading logo' );
+       console.log( uploadResult.data );
+       console.log( 'url' );
+       console.log( uploadResult.url );
+       console.log( 'uploadResult:' );
+       console.log( uploadResult );
+
+       if (err == null && uploadResult != null && uploadResult.url != null)
+       {
+			  mongoose.model('User').findById(req.id, function (err, blob) 
+			  {
+			     //update it
+				  blob.LogoFullRes = blob.url = uploadResult.url;
+			     blob.update({
+			        LogoFullRes: uploadResult.url
+			     }, function (err, blobID) {
+			        if (err) {
+				        res.send("There was a problem updating the information to the database: " + err);
+				     } 
+				     else {
+				        //HTML responds by going back to the page or you can be fancy and create a new view that shows a success page.
+				        res.format({
+				            html: function(){
+				               res.redirect("/users/" + blob._id);
+				            },
+				            //JSON responds showing the updated values
+				            json: function() {
+				                res.json(blob);
+				            }
+				         });
+				      }
+				  });
+			 });
+       }
+    });
+});
 
 //PUT to update a blob by ID
 router.post('/:id/organization/banner/upload', function(req, res) 
