@@ -10,13 +10,13 @@ block content
         p Email: 
             input#inputUsername(type='text', value='#{user.username}', name='username')
         p Banner: 
-            input#inputBanner(type='text', value='#{user.Banner}', name='Banner')
+            input#inputBanner(type='text', value='#{user.Banner || ""}', name='Banner')
         p BannerFullRes: 
-            input#inputBannerFullRes(type='text', value='#{user.BannerFullRes}', name='BannerFullRes')
+            input#inputBannerFullRes(type='text', value='#{user.BannerFullRes || ""}', name='BannerFullRes')
         p Logo: 
-            input#inputLogo(type='text', value='#{user.Logo}', name='Logo')
+            input#inputLogo(type='text', value='#{user.Logo || ""}', name='Logo')
         p LogoFullRes: 
-            input#inputLogoFullRes(type='text', value='#{user.LogoFullRes}', name='LogoFullRes')
+            input#inputLogoFullRes(type='text', value='#{user.LogoFullRes || ""}', name='LogoFullRes')
         p 
             input(type='hidden',value='PUT',name='_method')
         p 

@@ -412,7 +412,7 @@ app.controller('organizationProfileCtrl', function ($scope, $http, Upload)
             //clearFileUpload( '.pictureUploaderPreviewLogo' );
                         
             var aspectRatio = 1;
-            prefillImageCropper('logo', data.url, aspectRatio);
+            prefillImageCropper('logo', vm.organization.LogoFullRes, aspectRatio);
             
         } );
     };
