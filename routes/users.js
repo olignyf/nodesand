@@ -269,6 +269,9 @@ router.put('/:id/edit', function(req, res)
 // save on s3 but do not save in organisation, waiting to crop
 var postImageCrop = function ( whichItem, req, res ) 
 {
+      var curWidth;
+      var curHeight;
+
       // console.log('req:'); console.log(req);
       console.log('req.body:'); console.log(req.body);
       var crop = req.body.crop;
@@ -317,12 +320,13 @@ var postImageCrop = function ( whichItem, req, res )
                
               console.log('Going to crop, width:'+crop.width+' height:'+crop.height+' x:'+crop.x+' y:'+crop.y);
               Image = Image.crop(crop.width, crop.height, crop.x, crop.y);
+              curWidth = crop.width;
+              curHeight = crop.height;
           }
           
-          var f_imageWriteRoutine = function(whichItem, req, res)
+          var f_imageWriteRoutine = function(whichItem, req, res, Image)
           {
-	          //imageMagick(request('http://incoming.oligny.com/temp/20150604_184226.jpg'), 'my-image.jpg')
-	          console.log('write out');
+	          console.log('Final write out to disk before upload to S3');
 	          Image.write(tempOutputFile, function(err)
 	          {
 		           if (err) throw err;
@@ -391,34 +395,46 @@ var postImageCrop = function ( whichItem, req, res )
           
           if (isSet(crop.maxWidth) || isSet(crop.maxHeight)) {
           
-              Image.size(function (err, size) 
+              var f_resizeImage = function(whichItem, req, res, Image, width, height) 
               {
-                 if (err) throw err;
-	              var newWidth = size.width;
-	              var newHeight = size.height;
-	              if (isSet(crop.maxWidth) && newWidth > crop.maxWidth) {
-	                  newWidth = crop.maxWidth;
-	                  newHeight = crop.maxWidth * size.height / size.width;
-	              }
-	              if (isSet(crop.maxHeight) && newHeight > crop.maxHeight) {
-	                  newHeight = crop.maxHeight;
-	                  newWidth = crop.maxHeight * size.width / size.height;
-	              }
-	              
+                 var newWidth = width;
+                 var newHeight = height;
+		           console.log("original image size:"+width+"x"+height);
+		           if (isSet(crop.maxWidth) && newWidth > crop.maxWidth) {
+		               newWidth = crop.maxWidth;
+		               newHeight = crop.maxWidth * height / width;
+		           }
+		           if (isSet(crop.maxHeight) && newHeight > crop.maxHeight) {
+		               newHeight = crop.maxHeight;
+		               newWidth = crop.maxHeight * width / height;
+		           }
+	             
 	              console.log("last verif before resize");
-	              if (newWidth != size.width || newHeight != size.height) {
-	              newHeight = Number(Math.round(newHeight));
-	              newWidth = Number(Math.round(newWidth));
-	                  console.log("going to resize to "+newWidth+"x"+newHeight);
-	                  Image = Image.resize(newWidth, newHeight);
-	              }
-	              
-                 f_imageWriteRoutine(whichItem, req, res);
-              });
+		           if (newWidth != width || newHeight != height) {
+		              newHeight = Number(Math.round(newHeight));
+		              newWidth = Number(Math.round(newWidth));
+		              console.log("going to resize to "+newWidth+"x"+newHeight);
+		              Image = Image.resize(newWidth, newHeight);
+		           }
+		              
+	              f_imageWriteRoutine(whichItem, req, res, Image);
+	           };
+	           
+              if (curWidth === undefined) {
+                 // we don't have image size so we need to fetch image size 
+	              Image.size(function (err, size) 
+   	           {
+   	              if (err) throw err;
+   	              f_resizeImage(whichItem, req, res, Image, size.width, size.height);
+	              });
+	           }
+	           else { 
+	              f_resizeImage(whichItem, req, res, Image, curWidth, curHeight);
+	           }
           }
           else
           {
-              f_imageWriteRoutine(whichItem, req, res);
+              f_imageWriteRoutine(whichItem, req, res, Image);
           }
       };
       
