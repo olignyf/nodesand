@@ -41,7 +41,7 @@
                     <div class="col-sm-10">
                         <div class="pictureUploader pictureUploaderPreviewBanner row">
                             <div class="pictureUploaderPreview col-sm-2">
-                                <img alt="Banner Image" ng-src="{{ vm.organization.Banner }}" />
+                                <img alt="Banner Image" ng-src="{{ vm.organization.Banner }}" width="180" />
                             </div>
                             <div class="col-sm-8">
                                 <div class="row">
@@ -55,12 +55,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="line line-dashed b-b line-lg pull-in"></div>
-                <div class="form-group">
-                    <div class="col-sm-4 col-sm-offset-2">
-                        <button type="submit" translate="FormSave" ng-click="save(organizationProfileForm)" class="btn btn-primary"></button>
                     </div>
                 </div>
             </form>
@@ -106,18 +100,18 @@
                   <div class="col-md-8">
                     <div class="btn-group">
 
-                      <button class="btn btn-primary" data-method="rotate" data-option="-90" type="button" title="Rotate -90 degrees">Rotate Left</button>
-                      <button class="btn btn-primary" data-method="rotate" data-option="-1" type="button">-1deg</button>
+                      <button class="btn btn-primary" data-method="rotate" data-option="-90" type="button" title="Rotate -90 degrees">-90deg</button>
                       <button class="btn btn-primary" data-method="rotate" data-option="-45" type="button">-45deg</button>
+                      <button class="btn btn-primary" data-method="rotate" data-option="-1" type="button">-1deg</button>
                     </div>
                     <div class="btn-group">
                       <button class="btn btn-primary" data-method="zoom" data-option="-0.1" type="button"> - </button>
                       <button class="btn btn-primary" data-method="zoom" data-option="0.1" type="button"> + </button>
                     </div>
                     <div class="btn-group">
-                      <button class="btn btn-primary" data-method="rotate" data-option="90" type="button" title="Rotate 90 degrees">Rotate Right</button>
                       <button class="btn btn-primary" data-method="rotate" data-option="1" type="button">+1deg</button>
                       <button class="btn btn-primary" data-method="rotate" data-option="45" type="button">+45deg</button>
+                      <button class="btn btn-primary" data-method="rotate" data-option="90" type="button" title="Rotate 90 degrees">+90deg</button>
                     </div>
                   </div>
                   <div class="col-md-4">

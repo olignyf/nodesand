@@ -249,7 +249,8 @@ app.controller('organizationProfileCtrl', function ($scope, $http, Upload)
     	}
     	else
     	{
-        $scope.onOpenModalUpload('logo', vm.organization.LogoFullRes/*, no ratio*/); 
+    	   var aspectRatio = 1;
+         $scope.onOpenModalUpload('logo', vm.organization.LogoFullRes, aspectRatio); 
     	}
     };
     
